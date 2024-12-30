@@ -7,8 +7,8 @@
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // Wi-Fi Credentials
-const char *ssid = "SM_FreeWIFI";
-const char *password = "HaiseKen05$$";
+const char *ssid = "Wifi_name";
+const char *password = "Wifi_password";
 
 // NTP Server Configuration
 const char *ntpServer1 = "pool.ntp.org";
