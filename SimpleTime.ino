@@ -1,26 +1,28 @@
 #include <WiFi.h>
 #include "time.h"
 #include "esp_sntp.h"
-#include "LiquidCrystal_I2C.h"
+#include <Wire.h>
+#include <HD44780.h>         // Include HD44780 library for I2C LCD
+#include <HD44780_I2Cexp.h>  // Include the I2C expansion for HD44780
 
 // LCD Setup
-LiquidCrystal_I2C lcd(0x27, 20, 4);
+HD44780_I2Cexp lcd(0x27, 20, 4);  // I2C Address 0x27 for 20x4 LCD
 
 // Wi-Fi Credentials
-const char *ssid = "Wifi_name";
-const char *password = "Wifi_password";
+const char *ssid = ""; // Enter your Wifi Name 
+const char *password = ""; // Enter your Wifi Password
 
 // NTP Server Configuration
 const char *ntpServer1 = "pool.ntp.org";
 const char *ntpServer2 = "time.nist.gov";
-const long gmtOffset_sec = 3600 * 8;       // GMT offset in seconds
+const long gmtOffset_sec = 3600 * 8;       // change the 8 depending on which time zone you are in
 const int daylightOffset_sec = 3600;      // Daylight savings offset in seconds
 
 // Time Zone Configuration (optional)
 const char *time_zone = "CET-1CEST,M3.5.0,M10.5.0/3";
 
 // Location Information
-const char *location = "Your Location";
+const char *location = ""; //Enter your Location
 
 // Buffers to store last displayed date and time
 char lastDisplayedDate[20] = " ";
@@ -91,8 +93,8 @@ void connectToWiFi() {
 void setup() {
   // Serial and LCD Initialization
   Serial.begin(115200);
-  lcd.init();
-  lcd.backlight();
+  lcd.begin(20, 4);  // Initialize LCD (20 columns and 4 rows)
+  lcd.setBacklight(1);  // Turn on the backlight
 
   // Connect to Wi-Fi
   connectToWiFi();
