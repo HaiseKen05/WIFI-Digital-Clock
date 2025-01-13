@@ -9,8 +9,8 @@
 hd44780_I2Cexp lcd(0x27, 20, 4);  // I2C Address 0x27 for 20x4 LCD
 
 // Wi-Fi Credentials
-const char *ssid = "Administrator"; // Enter your Wifi Name 
-const char *password = "HaiseKen05$$"; // Enter your Wifi Password
+const char *ssid = ""; // Enter your Wifi Name 
+const char *password = ""; // Enter your Wifi Password
 
 // NTP Server Configuration
 const char *ntpServer1 = "pool.ntp.org";
@@ -22,7 +22,7 @@ const int daylightOffset_sec = 3600;      // Daylight savings offset in seconds
 const char *time_zone = "CET-1CEST,M3.5.0,M10.5.0/3";
 
 // Location Information
-const char *location = "Philippines, Cebu"; //Enter your Location
+const char *location = ""; //Enter your Location
 
 // Buffers to store last displayed date and time
 char lastDisplayedDate[20] = " ";
