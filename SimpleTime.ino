@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <WiFi.h>
 #include "time.h"
 #include "esp_sntp.h"
@@ -9,20 +10,21 @@
 hd44780_I2Cexp lcd(0x27, 20, 4);  // I2C Address 0x27 for 20x4 LCD
 
 // Wi-Fi Credentials
-const char *ssid = ""; // Enter your Wifi Name 
-const char *password = ""; // Enter your Wifi Password
+const char *ssid = " "; // Enter your Wifi Name 
+const char *password = " "; // Enter your Wifi Password
 
 // NTP Server Configuration
 const char *ntpServer1 = "pool.ntp.org";
 const char *ntpServer2 = "time.nist.gov";
-const long gmtOffset_sec = 3600 * 8;       // change the 8 depending on which time zone you are in
+const long gmtOffset_sec = 3600;       // change the 8 depending on which time zone you are in
 const int daylightOffset_sec = 3600;      // Daylight savings offset in seconds
 
 // Time Zone Configuration (optional)
 const char *time_zone = "CET-1CEST,M3.5.0,M10.5.0/3";
 
 // Location Information
-const char *location = ""; //Enter your Location
+const char *location = " "; //Enter your Location
+const char *location2 = " "; //Enter your  Secondary Location
 
 // Buffers to store last displayed date and time
 char lastDisplayedDate[20] = " ";
@@ -46,6 +48,7 @@ void printLocalTime() {
 
   // Update Date on LCD if it has changed
   if (strcmp(lastDisplayedDate, currentDate) != 0) {
+    lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print(" ");  // Clear row
     lcd.setCursor(0, 0);
@@ -67,6 +70,10 @@ void printLocalTime() {
   lcd.print(" ");  // Clear row
   lcd.setCursor(0, 2);
   lcd.print(location);
+  lcd.setCursor(0, 3);
+  lcd.print(" ");  // Clear row
+  lcd.setCursor(0, 3);
+  lcd.print(location2);
 }
 
 // Callback Function for NTP Time Synchronization
@@ -77,15 +84,26 @@ void timeSyncCallback(struct timeval *t) {
 
 // Wi-Fi Connection Setup
 void connectToWiFi() {
+
+    lcd.setCursor(0, 0);
+    lcd.print("Connecting to Wi-Fi");
+    lcd.clear();
+    delay(3000);  // Artificial delay for demonstration purposes
+
+    lcd.setCursor(0, 0);
+    lcd.print("Connecting to Wi-Fi");
   Serial.printf("Connecting to Wi-Fi: %s ", ssid);
+  delay(1000);  // Artificial delay for demonstration purposes
   WiFi.begin(ssid, password);
 
   // Wait until connected
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(3000);
     Serial.print(".");
   }
-
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Wi-Fi Connected!");
   Serial.println("\nWi-Fi Connected!");
 }
 
@@ -95,6 +113,8 @@ void setup() {
   Serial.begin(115200);
   lcd.begin(20, 4);  // Initialize LCD (20 columns and 4 rows)
   lcd.setBacklight(1);  // Turn on the backlight
+
+  delay(3000);  // Delay to give time to open Serial Monitor
 
   // Connect to Wi-Fi
   connectToWiFi();
