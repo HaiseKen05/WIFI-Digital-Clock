@@ -1,0 +1,124 @@
+#include <Wire.h>
+#include <WiFi.h>
+#include "time.h"
+#include "esp_sntp.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// OLED Config
+#define SCREEN_WIDTH 128   // OLED display width, in pixels
+#define SCREEN_HEIGHT 64   // UPDATED for SSD1309 (128x64)
+#define OLED_RESET    -1   // Reset pin (not needed for I2C)
+#define SCREEN_ADDRESS 0x3C // I2C address of your OLED (default)
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// Wi-Fi Credentials
+const char *ssid = "ESP32-AP";          // Enter your WiFi SSID
+const char *password = "ESP32-Connect"; // Enter your WiFi Password
+
+// NTP Server Configuration
+const char *ntpServer1 = "pool.ntp.org";
+const char *ntpServer2 = "time.nist.gov";
+const long gmtOffset_sec = 3600 * 8;      // GMT+8 for Philippines
+const int daylightOffset_sec = 0;         // Daylight savings
+
+// Location Text
+const char *location = "Cebu, Philippines";
+
+// Buffers to store last displayed time
+char lastDisplayedDate[20] = " ";
+char lastDisplayedTime[20] = " ";
+
+// Function: Print Local Time to OLED
+void printLocalTime() {
+  struct tm timeinfo;
+
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time!");
+    return;
+  }
+
+  // Format date/time strings
+  char currentDate[20];
+  char currentTime[20];
+  strftime(currentDate, sizeof(currentDate), "%b %d, %Y", &timeinfo); // e.g., Apr 10, 2025
+  strftime(currentTime, sizeof(currentTime), "%H:%M:%S", &timeinfo);  // e.g., 13:45:30
+
+  // Update OLED display
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  display.setCursor(0, 0);
+  display.print("Date: ");
+  display.println(currentDate);
+
+  display.setCursor(0, 16);
+  display.print("Time: ");
+  display.println(currentTime);
+
+  display.setCursor(0, 32);
+  display.print("Location:");
+  display.setCursor(0, 44);
+  display.println(location);
+
+  display.display();
+}
+
+// NTP Callback (Optional)
+void timeSyncCallback(struct timeval *t) {
+  Serial.println("NTP Time Synchronized!");
+  printLocalTime();
+}
+
+// Connect to Wi-Fi
+void connectToWiFi() {
+  Serial.printf("Connecting to Wi-Fi: %s ", ssid);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWi-Fi Connected!");
+}
+
+// Setup
+void setup() {
+  Serial.begin(115200);
+
+  // OLED Init
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 (SSD1309) allocation failed"));
+    for (;;); // Stop here if display fails
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(10, 28);
+  display.println("Connecting Wi-Fi...");
+  display.display();
+
+  // Connect to Wi-Fi
+  connectToWiFi();
+
+  // NTP Config
+  esp_sntp_servermode_dhcp(1);
+  sntp_set_time_sync_notification_cb(timeSyncCallback);
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer1, ntpServer2);
+
+  // Display connection confirmation
+  display.clearDisplay();
+  display.setCursor(10, 28);
+  display.println("Wi-Fi Connected!");
+  display.display();
+}
+
+// Loop
+void loop() {
+  delay(1000); // Update every second
+  printLocalTime();
+}
