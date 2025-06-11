@@ -1,0 +1,120 @@
+#include <WiFi.h>
+#include <TFT_eSPI.h>
+#include <time.h>
+#include <math.h>
+
+// Display Setup
+TFT_eSPI tft = TFT_eSPI();  // TFT_eSPI uses User_Setup.h
+
+// Wi-Fi Credentials
+const char *ssid = "ESP32-AP";
+const char *password = "ESP32-Connect";
+
+// NTP Server
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 3600 * 8; // GMT+8 (Philippines)
+const int daylightOffset_sec = 0;
+
+// Clock UI Setup
+const int clockCenterX = 160;
+const int clockCenterY = 120;
+const int clockRadius = 100;
+
+int prevSec = -1;  // Track last second for redrawing second hand
+
+// Connect to Wi-Fi
+void connectToWiFi() {
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("Connected!");
+}
+
+// Draw static clock face with hour ticks
+void drawClockFace() {
+  tft.fillScreen(TFT_BLACK);
+  tft.drawCircle(clockCenterX, clockCenterY, clockRadius, TFT_WHITE);
+
+  // Draw hour markers and numbers
+  for (int i = 1; i <= 12; i++) {
+    float angle = i * 30 * DEG_TO_RAD;
+    int xMarkStart = clockCenterX + cos(angle - PI/2) * (clockRadius - 10);
+    int yMarkStart = clockCenterY + sin(angle - PI/2) * (clockRadius - 10);
+    int xMarkEnd = clockCenterX + cos(angle - PI/2) * (clockRadius - 2);
+    int yMarkEnd = clockCenterY + sin(angle - PI/2) * (clockRadius - 2);
+    tft.drawLine(xMarkStart, yMarkStart, xMarkEnd, yMarkEnd, TFT_WHITE);
+
+    // Position numbers slightly inside the markers
+    int xText = clockCenterX + cos(angle - PI/2) * (clockRadius - 22);
+    int yText = clockCenterY + sin(angle - PI/2) * (clockRadius - 22);
+
+    // Center the number text
+    tft.setTextDatum(MC_DATUM);  // Middle center
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setTextSize(2);
+    tft.drawString(String(i), xText, yText);
+  }
+
+  // Optional: Draw center dot
+  tft.fillCircle(clockCenterX, clockCenterY, 3, TFT_WHITE);
+}
+
+
+// Draw a clock hand (angle in degrees)
+void drawHand(float angleDeg, int length, uint16_t color) {
+  float angleRad = angleDeg * DEG_TO_RAD;
+  int x = clockCenterX + cos(angleRad - PI/2) * length;
+  int y = clockCenterY + sin(angleRad - PI/2) * length;
+  tft.drawLine(clockCenterX, clockCenterY, x, y, color);
+}
+
+// Update clock hands each second
+void updateClock() {
+  static int lastMinute = -1;
+
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) return;
+
+  if (timeinfo.tm_min != lastMinute) {
+    lastMinute = timeinfo.tm_min;
+
+    // Redraw face only when minute changes
+    drawClockFace();
+
+    // Compute angles
+    float minuteAngle = timeinfo.tm_min * 6;
+    float hourAngle = (timeinfo.tm_hour % 12 + timeinfo.tm_min / 60.0) * 30;
+
+    // Draw hour and minute hands
+    drawHand(hourAngle, clockRadius - 50, TFT_WHITE);
+    drawHand(minuteAngle, clockRadius - 35, TFT_CYAN);
+  }
+}
+
+
+
+void setup() {
+  Serial.begin(115200);
+  tft.init();
+  tft.setRotation(1);  // Landscape
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(40, 120);
+  tft.println("Connecting Wi-Fi...");
+  
+  connectToWiFi();
+
+  // Sync time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  delay(2000);
+  drawClockFace();  // Initial face
+}
+
+void loop() {
+  updateClock();
+  delay(1000);  // Refresh rate for smoothness
+}
